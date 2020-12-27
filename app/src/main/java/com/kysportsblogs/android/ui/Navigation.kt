@@ -7,6 +7,8 @@ import androidx.navigation.compose.*
 import com.kysportsblogs.android.MainViewModel
 import com.kysportsblogs.android.ui.screens.HomeScreen
 import com.kysportsblogs.android.ui.screens.PostScreen
+import com.kysportsblogs.android.HomeScreenViewModel
+import com.kysportsblogs.android.di.navViewModel
 
 sealed class Screen(val route: String, val title: String, val isTopLevel: Boolean = false) {
     object Home: Screen("home/", "Kentucky Sports Blogs", true)
@@ -23,7 +25,10 @@ fun NavGraphBuilder.buildNavGraph(navController: NavHostController, viewModel: M
             navArgument("title") { defaultValue = Screen.Home.title },
             navArgument("isTopLevel") { defaultValue = true })
     ) {
-        HomeScreen(viewModel, onPostClicked = { post ->
+
+        val vm: HomeScreenViewModel = navViewModel()
+
+        HomeScreen(vm, onPostClicked = { post ->
             navController.navigate(Screen.Post.buildRoute(post.postId))
         })
     }

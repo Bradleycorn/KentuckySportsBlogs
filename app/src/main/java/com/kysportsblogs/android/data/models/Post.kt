@@ -2,19 +2,30 @@ package com.kysportsblogs.android.data.models
 
 import android.text.Html
 import androidx.room.*
+import com.kysportsblogs.android.data.network.KsrApi
 import com.kysportsblogs.android.data.network.responseModels.WordpressPost
 import com.kysportsblogs.android.data.network.responseModels.WpMediaDetails
-import com.kysportsblogs.android.util.extensions.*
+import com.kysportsblogs.android.extensions.*
 import java.util.*
 
 
-@Entity(tableName = "Posts")
+@Entity(
+    tableName = "Posts",
+    indices = [
+        Index(value = ["type"]),
+        Index(value = ["topStory"]),
+        Index(value = ["type", "topStory"])
+    ]
+)
 data class Post(
     @PrimaryKey
     val postId: Long,
+    val type: PostType,
+    val topStory: Boolean,
     val url: String,
     val datePosted: Date,
     val dateModified: Date?,
+    val wordpressDate: String,
     val title: String,
     val content: String,
     val description: String,
@@ -33,17 +44,6 @@ data class Post(
         }
 
     companion object {
-//        fun fromRss(rss: RssItem): Post {
-//            val timestamp = rss.pubDate.toDate(RssItem.PUB_DATE_FORMAT)?.time ?: 0
-//
-//            val html = Jsoup.parse(rss.content)
-//            val imageUrl = try { html.select("img.used-as-featured").first().attr("src") } catch(ex: Exception) { null }
-//
-//            html.outputSettings().prettyPrint(false)
-//            val content = html.html()
-//            return Post(rss.guid, imageUrl, rss.title, rss.description, rss.creator, timestamp, content)
-//        }
-
         fun fromWordpress(posts: List<WordpressPost>?): List<BlogPost> = posts?.map { fromWordpress(it) } ?: listOf()
 
         fun fromWordpress(wpPost: WordpressPost): BlogPost {
@@ -57,11 +57,24 @@ data class Post(
 
             val categories = Category.fromWpTerms(wpPost.embedded.terms)
 
+            val topStory = categories.contains { it.categoryId == KsrApi.CATEGORY_TOP_STORIES }
+            val footballPost = categories.contains { it.categoryId == KsrApi.CATEGORY_FOOTBALL }
+            val basketballPost = categories.contains { it.categoryId == KsrApi.CATEGORY_BASKETBALL }
+
+            val postType = when {
+                footballPost -> PostType.FOOTBALL
+                basketballPost -> PostType.BASKETBALL
+                else -> PostType.OTHER
+            }
+
             val post = Post(
                 postId = wpPost.id,
+                type = postType,
+                topStory = topStory,
                 url = wpPost.link,
                 datePosted = wpPost.postDate ?: Date(),
                 dateModified = wpPost.modifiedDate,
+                wordpressDate = wpPost.date,
                 title = Html.fromHtml(wpPost.title.rendered, Html.FROM_HTML_MODE_COMPACT).toString(),
                 content = wpPost.content.rendered,
                 description = description,
@@ -82,7 +95,19 @@ data class Post(
     }
 }
 
-@Entity(primaryKeys = ["postId","categoryId"])
+@Entity(
+    primaryKeys = ["postId","categoryId"],
+    foreignKeys = [
+        ForeignKey(
+            entity = Post::class,
+            parentColumns = ["postId"],
+            childColumns = ["postId"],
+            onDelete  = ForeignKey.CASCADE)
+    ],
+    indices = [
+        Index(value = ["categoryId"])
+    ]
+)
 data class PostCategories(
     val postId: Long,
     val categoryId: Long
@@ -104,9 +129,12 @@ data class BlogPost(
 val previewPost = BlogPost(
     Post(
         postId = 1,
+        type = PostType.FOOTBALL,
+        topStory = true,
         url="https://www.kentuckysportsradio.com/?p=1234",
         datePosted = Date(),
         dateModified = null,
+        wordpressDate = Date().toString("MM-dd-YYYY h:mm:ss"),
         title = "Kentucky wins the Gator Bowl over Penn State",
         content = "<html><body><h1>Kentucky Wins</h1><p>Kentucky wins the game and everyone celebrates.",
         description = "It was a great game, and Lynn Bowden and the Kentucky Wildcats prevailed over the Penn State Nitany Lions in a hard fought game in which Kentucky was clearly the better team.",

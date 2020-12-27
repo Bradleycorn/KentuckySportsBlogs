@@ -1,6 +1,8 @@
-package com.kysportsblogs.android.util.extensions
+package com.kysportsblogs.android.extensions
 
 import java.text.SimpleDateFormat
+import java.time.Duration
+import java.time.Instant
 import java.util.*
 
 val DATE_FORMAT_MDY
@@ -40,6 +42,15 @@ val Date?.isYesterday: Boolean
         }
     }
 
+fun Date.add(amount: Int, unit: Int): Date {
+    return Calendar.getInstance().apply {
+        time = this@add
+        add(unit, amount)
+    }.time
+}
+
+fun Date.addDays(days: Int): Date = add(days, Calendar.DAY_OF_MONTH)
+
 
 fun String.toDate(format: String, isGMT: Boolean = false, locale: Locale = Locale.US): Date? {
     val formatter = SimpleDateFormat(format, locale)
@@ -47,3 +58,21 @@ fun String.toDate(format: String, isGMT: Boolean = false, locale: Locale = Local
     return formatter.parse(this)
 }
 
+
+val Number.Seconds: Duration
+    get() = Duration.ofSeconds(this.toLong())
+
+val Number.Minutes: Duration
+    get() = Duration.ofMinutes(this.toLong())
+
+val Number.Hours: Duration
+    get() = Duration.ofHours(this.toLong())
+
+val Number.Days: Duration
+    get() = Duration.ofDays(this.toLong())
+
+val Duration.Ago: Instant
+    get() = Instant.now().minus(this)
+
+val Duration.fromNow: Instant
+    get() = Instant.now().plus(this)

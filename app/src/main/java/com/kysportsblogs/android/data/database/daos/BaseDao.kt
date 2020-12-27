@@ -1,4 +1,4 @@
-package com.kysportsblogs.android.data.database
+package com.kysportsblogs.android.data.database.daos
 
 import androidx.room.*
 
@@ -85,5 +85,9 @@ abstract class BaseDao<E> {
             update(updateList)
         }
     }
+
+    @Transaction
+    open suspend fun withTransaction(tx: suspend () -> Unit) = tx()
+
 
 }

@@ -1,11 +1,8 @@
 package com.kysportsblogs.android.ui.screens
 
 import android.annotation.SuppressLint
-import android.util.Log
 import android.webkit.WebView
 import android.webkit.WebViewClient
-import androidx.compose.foundation.ScrollableColumn
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.AmbientContentAlpha
 import androidx.compose.material.ContentAlpha
@@ -16,10 +13,9 @@ import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.ContextAmbient
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
-import androidx.ui.tooling.preview.Preview
 import androidx.webkit.WebSettingsCompat
 import androidx.webkit.WebViewFeature
 import coil.transform.CircleCropTransformation
@@ -27,32 +23,44 @@ import com.kysportsblogs.android.AppScreen
 import com.kysportsblogs.android.MainViewModel
 import com.kysportsblogs.android.R
 import com.kysportsblogs.android.ThemedPreview
+import com.kysportsblogs.android.data.models.BlogPost
 import com.kysportsblogs.android.data.models.Post
 import com.kysportsblogs.android.data.models.previewPost
 import com.kysportsblogs.android.ui.theme.primaryOnSurface
-import com.kysportsblogs.android.util.extensions.getColorFromAttr
-import com.kysportsblogs.android.util.extensions.toString
+import com.kysportsblogs.android.ui.UiState
+import com.kysportsblogs.android.extensions.getColorFromAttr
+import com.kysportsblogs.android.extensions.toString
+import com.kysportsblogs.android.ui.composables.posts.PostImage
 import dev.chrisbanes.accompanist.coil.CoilImage
+
 
 @Composable
 fun PostScreen(viewModel: MainViewModel, postId: Long) {
-    val post by viewModel.getPost(postId).collectAsState(null)
-    post?.let { blogPost ->
-        AppScreen {
-            val postContent by viewModel.formatPostContent(blogPost.post.content).observeAsState(initial = null)
-            PostContent(blogPost.post, postContent)
-        }
-    }
+//    val post by remember(viewModel, postId) { viewModel.getPost(postId) }
+//        .collectAsState(initial = UiState.Loading())
+//
+//    when {
+//        post.loading -> Text("Loading Post .... ")
+//        post.hasError -> Text("Uh Oh!")
+//        post.data != null -> {
+//            val postContent by viewModel.formatPostContent(post.data!!.post.content).observeAsState(initial = null)
+//            PostContent(blogPost = post.data!!, postContent)
+//        }
+//    }
 }
 
 @Composable
-private fun PostContent(post: Post, postContent: String?) {
-   Column {
-        PostImage(url = post.imageUrl)
-        Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
-            PostDetails(post)
-            postContent?.let {
-                PostBody(postContent)
+private fun PostContent(blogPost: BlogPost, postContent: String?) {
+    val post = blogPost.post
+
+    AppScreen {
+        Column {
+            PostImage(url = post.imageUrl)
+            Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
+                PostDetails(post)
+                postContent?.let {
+                    PostBody(postContent)
+                }
             }
         }
     }
@@ -121,6 +129,6 @@ fun PostBody(html: String, modifier: Modifier = Modifier) {
 @Composable
 fun PreviewPostScreen() {
     ThemedPreview {
-        PostContent(post = previewPost.post, previewPost.post.content)
+        PostContent(blogPost = previewPost, previewPost.post.content)
     }
 }
