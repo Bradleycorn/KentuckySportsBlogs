@@ -1,58 +1,67 @@
 package com.kysportsblogs.android.ui.screens
 
 import android.annotation.SuppressLint
-import android.util.Log
 import android.webkit.WebView
 import android.webkit.WebViewClient
-import androidx.compose.foundation.ScrollableColumn
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
-import androidx.compose.material.AmbientContentAlpha
-import androidx.compose.material.ContentAlpha
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Text
+import androidx.compose.material.*
 import androidx.compose.runtime.*
-import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.ContextAmbient
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
-import androidx.ui.tooling.preview.Preview
 import androidx.webkit.WebSettingsCompat
 import androidx.webkit.WebViewFeature
 import coil.transform.CircleCropTransformation
 import com.kysportsblogs.android.AppScreen
-import com.kysportsblogs.android.MainViewModel
 import com.kysportsblogs.android.R
-import com.kysportsblogs.android.ThemedPreview
+import com.kysportsblogs.android.data.models.BlogPost
 import com.kysportsblogs.android.data.models.Post
-import com.kysportsblogs.android.data.models.previewPost
 import com.kysportsblogs.android.ui.theme.primaryOnSurface
-import com.kysportsblogs.android.util.extensions.getColorFromAttr
-import com.kysportsblogs.android.util.extensions.toString
+import com.kysportsblogs.android.ui.UiState
+import com.kysportsblogs.android.extensions.getColorFromAttr
+import com.kysportsblogs.android.extensions.toString
+import com.kysportsblogs.android.ui.composables.LoadingIndicator
+import com.kysportsblogs.android.ui.composables.posts.PostImage
 import dev.chrisbanes.accompanist.coil.CoilImage
 
 @Composable
-fun PostScreen(viewModel: MainViewModel, postId: Long) {
-    val post by viewModel.getPost(postId).collectAsState(null)
-    post?.let { blogPost ->
-        AppScreen {
-            val postContent by viewModel.formatPostContent(blogPost.post.content).observeAsState(initial = null)
-            PostContent(blogPost.post, postContent)
-        }
+fun PostScreen(viewModel: PostScreenViewModel, postId: Long,) {
+    val post = viewModel.postState
+    LaunchedEffect(viewModel, postId) { viewModel.loadPost(postId) }
+
+    when {
+        post.loading -> LoadingIndicator()
+        post.hasError -> Text("Uh Oh!")
+        post.hasData -> PostContent(blogPost = post.data!!)
     }
 }
 
 @Composable
-private fun PostContent(post: Post, postContent: String?) {
-   Column {
-        PostImage(url = post.imageUrl)
-        Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
-            PostDetails(post)
-            postContent?.let {
-                PostBody(postContent)
+private fun PostContent(blogPost: BlogPost) {
+    val post = blogPost.post
+    val postContent by produceState(initialValue = UiState.Loading<String>(), subject = post) {
+        val content = post.formatContent()
+        value = value.copy(loading = false, data = content)
+    }
+
+    AppScreen {
+        Column {
+            // This is a "workaround" for a defect with WebViews in Compose (See: https://issuetracker.google.com/issues/174233728)
+            // Because of the defect, you can see a flash of the post image and title and then it goes away when the post content loads.
+            // This code shows a loading indicator while the content is loading, and then shows all screen elements at the same time.
+            // The defect still persists, the image and title don't show up until you scroll. But at least they don't flash.
+            // When the defect is resolved, this can be updated to show the image and title right away and only delay the content composable.
+            when {
+                postContent.loading -> LoadingIndicator()
+                postContent.data != null -> {
+                    PostImage(url = post.imageUrl)
+                    Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
+                        PostDetails(post)
+                        PostBody(postContent.data!!)
+                    }
+                }
             }
         }
     }
@@ -117,10 +126,10 @@ fun PostBody(html: String, modifier: Modifier = Modifier) {
     })
 }
 
-@Preview
-@Composable
-fun PreviewPostScreen() {
-    ThemedPreview {
-        PostContent(post = previewPost.post, previewPost.post.content)
-    }
-}
+//@Preview
+//@Composable
+//fun PreviewPostScreen() {
+//    ThemedPreview {
+//        PostContent(blogPost = previewPost, previewPost.post.content)
+//    }
+//}

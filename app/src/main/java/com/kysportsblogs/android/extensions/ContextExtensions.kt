@@ -1,4 +1,4 @@
-package com.kysportsblogs.android.util.extensions
+package com.kysportsblogs.android.extensions
 
 import android.content.Context
 import android.util.TypedValue

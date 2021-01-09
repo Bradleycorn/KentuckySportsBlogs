@@ -1,11 +1,13 @@
 package com.kysportsblogs.android.data.network.responseModels
 
 import com.google.gson.annotations.SerializedName
-import com.kysportsblogs.android.util.extensions.toDate
+import com.kysportsblogs.android.extensions.toDate
+import com.kysportsblogs.android.extensions.toString
 import java.util.*
 
 data class WordpressPost(
     val id: Long,
+    val date: String,
     val date_gmt: String,
     val modified_gmt: String,
     val status: String,
