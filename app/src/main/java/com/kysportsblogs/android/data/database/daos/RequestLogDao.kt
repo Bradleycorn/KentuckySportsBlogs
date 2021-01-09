@@ -13,5 +13,5 @@ abstract class RequestLogDao: BaseDao<RequestLogEntry>() {
     abstract override suspend fun insert(obj: RequestLogEntry): Long
 
     @Query("SELECT * FROM RequestLog WHERE postType = :postType ORDER BY id DESC LIMIT 1")
-    abstract suspend fun getRequest(postType: PostType): RequestLogEntry
+    abstract suspend fun getRequest(postType: PostType): RequestLogEntry?
 }

@@ -14,6 +14,7 @@ import com.kysportsblogs.android.data.models.RequestLogEntry
 
 @Database(
     version = 1,
+    exportSchema = false,
     entities = [
         Post::class,
         Category::class,

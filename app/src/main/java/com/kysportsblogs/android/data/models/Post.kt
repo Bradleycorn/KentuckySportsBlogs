@@ -6,7 +6,11 @@ import com.kysportsblogs.android.data.network.KsrApi
 import com.kysportsblogs.android.data.network.responseModels.WordpressPost
 import com.kysportsblogs.android.data.network.responseModels.WpMediaDetails
 import com.kysportsblogs.android.extensions.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import org.jsoup.Jsoup
 import java.util.*
+import kotlin.coroutines.CoroutineContext
 
 
 @Entity(
@@ -21,6 +25,7 @@ data class Post(
     @PrimaryKey
     val postId: Long,
     val type: PostType,
+    val sport: Sports,
     val topStory: Boolean,
     val url: String,
     val datePosted: Date,
@@ -43,6 +48,38 @@ data class Post(
             }
         }
 
+    suspend fun formatContent(dispatcher: CoroutineContext = Dispatchers.IO): String = withContext(dispatcher) {
+        val doc = Jsoup.parse(content).apply {
+            val body = select("body").first()
+            select("head").first().apply {
+                appendElement("meta").apply {
+                    attr("name", "viewport")
+                    attr("content", "width=device-width,user-scalable=yes")
+                }
+                appendElement("link").apply {
+                    attr("rel", "stylesheet")
+                    attr("type", "text/css")
+                    attr("href", "post-css.css")
+                }
+            }
+
+            val img = select("img.used-as-featured").first()
+            val parent = img.parent()
+
+            if (parent.hasClass("wp-caption")) {
+                parent.remove()
+            } else {
+                img.remove()
+            }
+            body.appendElement("script").apply {
+                attr("src", "post-scripts.js")
+                attr("type", "text/javascript")
+            }
+        }
+
+        doc.html()
+    }
+
     companion object {
         fun fromWordpress(posts: List<WordpressPost>?): List<BlogPost> = posts?.map { fromWordpress(it) } ?: listOf()
 
@@ -62,14 +99,22 @@ data class Post(
             val basketballPost = categories.contains { it.categoryId == KsrApi.CATEGORY_BASKETBALL }
 
             val postType = when {
+                topStory -> PostType.TOP_STORIES
                 footballPost -> PostType.FOOTBALL
                 basketballPost -> PostType.BASKETBALL
                 else -> PostType.OTHER
             }
 
+            val sport = when {
+                footballPost -> Sports.FOOTBALL
+                basketballPost -> Sports.BASKETBALL
+                else -> Sports.OTHER
+            }
+
             val post = Post(
                 postId = wpPost.id,
                 type = postType,
+                sport = sport,
                 topStory = topStory,
                 url = wpPost.link,
                 datePosted = wpPost.postDate ?: Date(),
@@ -130,6 +175,7 @@ val previewPost = BlogPost(
     Post(
         postId = 1,
         type = PostType.FOOTBALL,
+        sport = Sports.FOOTBALL,
         topStory = true,
         url="https://www.kentuckysportsradio.com/?p=1234",
         datePosted = Date(),

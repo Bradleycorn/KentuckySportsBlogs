@@ -37,7 +37,9 @@ fun PostExcerpt(blogPost: BlogPost,
                         style = MaterialTheme.typography.subtitle1)
                 }
                 Providers(AmbientContentAlpha provides ContentAlpha.medium) {
-                    PostMetaData(post = post)
+                    Row {
+                        PostMetaData(post = post)
+                    }
                 }
             }
         }
@@ -54,8 +56,7 @@ fun PostExcerpt(blogPost: BlogPost,
 }
 
 @Composable
-fun PostMetaData(post: Post) {
-    Row {
+fun PostMetaData(post: Post, modifier: Modifier = Modifier) {
         Providers(AmbientContentAlpha provides ContentAlpha.high) {
             Text(text = post.displayDate, style = MaterialTheme.typography.body2)
         }
@@ -64,8 +65,18 @@ fun PostMetaData(post: Post) {
         Providers(AmbientContentAlpha provides ContentAlpha.medium) {
             Text(text = post.author, style = MaterialTheme.typography.body2)
         }
-    }
+//    Row {
+//        Providers(AmbientContentAlpha provides ContentAlpha.high) {
+//            Text(text = post.displayDate, style = MaterialTheme.typography.body2)
+//        }
+//        Spacer(modifier = Modifier.width(16.dp))
+//
+//        Providers(AmbientContentAlpha provides ContentAlpha.medium) {
+//            Text(text = post.author, style = MaterialTheme.typography.body2)
+//        }
+//    }
 }
+
 
 @Preview("Post Excerpt")
 @Composable

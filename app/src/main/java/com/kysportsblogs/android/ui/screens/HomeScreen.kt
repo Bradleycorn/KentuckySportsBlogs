@@ -1,7 +1,6 @@
 package com.kysportsblogs.android.ui.screens
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.ExperimentalAnimationApi
+import android.util.Log
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRowForIndexed
@@ -15,27 +14,25 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.kysportsblogs.android.AppScreen
 import com.kysportsblogs.android.HomeScreenState
 import com.kysportsblogs.android.HomeScreenViewModel
-import com.kysportsblogs.android.ThemedPreview
 import com.kysportsblogs.android.data.models.*
-import com.kysportsblogs.android.extensions.isNotEmpty
 import com.kysportsblogs.android.ui.UiState
+import com.kysportsblogs.android.ui.composables.LoadingIndicator
 import com.kysportsblogs.android.ui.composables.posts.*
 
 @Composable
-fun HomeScreen(viewModel: HomeScreenViewModel, onPostClicked: (Post) -> Unit = {}) {
-    val uiState = viewModel.homeScreenState
+fun HomeScreen(viewModel: HomeScreenViewModel, onPostClicked: (Post) -> Unit = {}, onCategoryClicked: (PostType) -> Unit = {}) {
+    val state = viewModel.homeScreenState
+    LaunchedEffect(subject = viewModel) { viewModel.loadPosts() }
 
     AppScreen {
-        Home(uiState, onPostClicked = onPostClicked)
-//        when {
-//            uiState.isLoadingAll ->  Box(modifier = Modifier.fillMaxSize()) { CircularProgressIndicator(modifier = Modifier.align(Alignment.Center)) }
-//            else ->
-//        }
+        when {
+            state.initialLoad -> LoadingIndicator()
+            else -> Home(state, onPostClicked = onPostClicked, onCategoryClicked = onCategoryClicked)
+        }
     }
 }
 
@@ -46,23 +43,23 @@ private fun Home(uiState: HomeScreenState, onPostClicked: (Post) -> Unit = {}, o
     val scroll = rememberScrollState(0F)
 
     ScrollableColumn(scrollState = scroll) {
-        TopStoriesList(state = uiState.topStoriesState.value, onPostClicked = onPostClicked)
+        TopStoriesList(state = uiState.topStoriesState, onPostClicked = onPostClicked)
 
         CategoryStoriesList(
-            state = uiState.footballState.value,
+            state = uiState.footballState,
             type = PostType.FOOTBALL,
             onPostClicked = onPostClicked,
             onMoreClicked = onCategoryClicked
         )
 
         CategoryStoriesList(
-            state = uiState.basketballState.value,
+            state = uiState.basketballState,
             type = PostType.BASKETBALL,
             onPostClicked = onPostClicked,
             onMoreClicked = onCategoryClicked
         )
 
-        MoreStoriesList(state = uiState.otherPostsState.value, onPostClicked = onPostClicked, onMoreClicked = onCategoryClicked)
+        MoreStoriesList(state = uiState.otherPostsState, onPostClicked = onPostClicked, onMoreClicked = onCategoryClicked)
     }
 }
 
@@ -96,35 +93,39 @@ private fun SectionTitle(text: String, showMoreIcon: Boolean = false, showLoadin
 
 @Composable
 fun TopStoriesList(state: UiState<List<BlogPost>>, onPostClicked: (Post) -> Unit) {
-    SectionTitle(
-        text = "Top Stories",
-        showLoadingIcon = state.loading
-    )
-    state.data?.let { posts ->
-        posts.forEach { blogPost ->
-            Row(modifier = Modifier.padding(horizontal = 8.dp).padding(bottom = 4.dp)) {
-                TopStory(blogPost = blogPost, onClick = onPostClicked)
+
+    if (state.initialLoad || state.hasData) {
+        SectionTitle(
+            text = "Top Stories",
+            showLoadingIcon = state.loading
+        )
+        state.data?.let { posts ->
+            posts.take(5).forEach { blogPost ->
+                Row(modifier = Modifier.padding(horizontal = 8.dp).padding(bottom = 4.dp)) {
+                    TopStory(blogPost = blogPost, onClick = onPostClicked)
+                }
             }
         }
     }
-
 }
 
 @Composable
 fun CategoryStoriesList(state: UiState<List<BlogPost>>, type: PostType, onPostClicked: (Post) -> Unit, onMoreClicked: (PostType) -> Unit = {}) {
-    SectionTitle(
-        text = type.displayName,
-        showLoadingIcon = state.loading,
-        showMoreIcon = !state.loading,
-        onIconClicked = { onMoreClicked(type) }
-    )
-    state.data?.let { posts ->
-        LazyRowForIndexed(items = posts) { index, blogPost ->
-            if (index == 0) {
-                Spacer(modifier = Modifier.width(4.dp))
-            }
-            Box(modifier = Modifier.padding(horizontal = 4.dp).padding(bottom = 4.dp)) {
-                PostTile(blogPost = blogPost, onPostClick = onPostClicked)
+    if (state.initialLoad || state.hasData) {
+        SectionTitle(
+            text = type.displayName,
+            showLoadingIcon = state.loading,
+            showMoreIcon = !state.loading,
+            onIconClicked = { onMoreClicked(type) },
+        )
+        state.data?.let { posts ->
+            LazyRowForIndexed(items = posts.take(5)) { index, blogPost ->
+                if (index == 0) {
+                    Spacer(modifier = Modifier.width(4.dp))
+                }
+                Box(modifier = Modifier.padding(horizontal = 4.dp).padding(bottom = 4.dp)) {
+                    PostTile(blogPost = blogPost, onPostClick = onPostClicked)
+                }
             }
         }
     }
@@ -132,14 +133,18 @@ fun CategoryStoriesList(state: UiState<List<BlogPost>>, type: PostType, onPostCl
 
 @Composable
 fun MoreStoriesList(state: UiState<List<BlogPost>>, onPostClicked: (Post)->Unit, onMoreClicked: (PostType) -> Unit = {}) {
-    SectionTitle(
-        text = PostType.OTHER.displayName,
-        showLoadingIcon = state.loading,
-        showMoreIcon = !state.loading,
-        onIconClicked = { onMoreClicked(PostType.OTHER) })
-    state.data?.let { posts ->
-        posts.forEachIndexed { index, post ->
-            PostListItem(post = post, index = index, onPostClicked = onPostClicked)
+    if (state.initialLoad || state.hasData) {
+        if (state.loading || !state.data.isNullOrEmpty()) {
+            SectionTitle(
+                text = PostType.OTHER.displayName,
+                showLoadingIcon = state.loading,
+                showMoreIcon = !state.loading,
+                onIconClicked = { onMoreClicked(PostType.OTHER) })
+            state.data?.let { posts ->
+                posts.forEachIndexed { index, post ->
+                    PostListItem(post = post, index = index, onPostClicked = onPostClicked)
+                }
+            }
         }
     }
 }

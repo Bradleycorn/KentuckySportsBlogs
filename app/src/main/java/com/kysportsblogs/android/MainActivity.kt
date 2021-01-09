@@ -26,11 +26,6 @@ val AmbientNavController = staticAmbientOf<NavController>()
 @AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
 
-    private val viewModel by viewModels<MainViewModel>()
-    private val vm by viewModels<HomeScreenViewModel> {
-        defaultViewModelProviderFactory
-    }
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -46,6 +41,7 @@ class MainActivity : AppCompatActivity() {
                     Scaffold(
                         topBar = {
                             val destination by navController.currentBackStackEntryAsState()
+
                             val isTopLevel =
                                 destination?.arguments?.getBoolean("isTopLevel") ?: false
                             val title = destination?.arguments?.getString("title")
@@ -61,7 +57,7 @@ class MainActivity : AppCompatActivity() {
                                 navController = navController,
                                 startDestination = Screen.Home.route
                             ) {
-                                buildNavGraph(navController, viewModel)
+                                buildNavGraph(navController)
                             }
                         }
                     }

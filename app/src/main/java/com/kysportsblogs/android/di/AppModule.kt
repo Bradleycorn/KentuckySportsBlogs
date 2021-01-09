@@ -31,17 +31,6 @@ object AppModule {
 
     @Provides
     @Singleton
-    fun provideKsrApi(): KsrApi {
-        return Retrofit.Builder()
-            .baseUrl(KsrApi.BASE_URL)
-            .addConverterFactory(GsonConverterFactory.create())
-            .addConverterFactory(SimpleXmlConverterFactory.create())
-            .build()
-            .create(KsrApi::class.java)
-    }
-
-    @Provides
-    @Singleton
     fun providesDispatchers() = AppDispatchers(
         io = Dispatchers.IO,
         main = Dispatchers.Main,

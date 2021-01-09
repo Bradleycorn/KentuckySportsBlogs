@@ -1,6 +1,7 @@
 package com.kysportsblogs.android.data.database.daos
 
 import androidx.room.Dao
+import androidx.room.Delete
 import androidx.room.Query
 import androidx.room.Transaction
 import com.kysportsblogs.android.data.models.BlogPost
@@ -15,26 +16,18 @@ abstract class PostsDao: BaseDao<Post>() {
 
     @Transaction
     @Query("SELECT * FROM Posts WHERE type = :postType ORDER by datePosted DESC")
-    protected abstract fun postsByTypeObservable(postType: PostType): Flow<List<BlogPost>>
-
-    @Transaction
-    @Query("SELECT * FROM Posts WHERE topStory = 1 ORDER by datePosted DESC")
-    abstract fun topPostsObservable(): Flow<List<BlogPost>>
+    abstract fun postsByTypeObservable(postType: PostType): Flow<List<BlogPost>>
 
     @Query("DELETE FROM Posts WHERE type = :postType")
     abstract suspend fun deletePostsByType(postType: PostType)
 
-    @Query("SELECT datePosted FROM Posts p WHERE type = :postType ORDER by datePosted DESC LIMIT 1")
-    abstract suspend fun getLatestPostDate(postType: PostType): Date?
+    @Transaction
+    @Query("SELECT * FROM Posts WHERE postId = :id")
+    abstract fun postObservable(id: Long): Flow<BlogPost>
 
     @Transaction
-    open fun postTypeObservable(postType: PostType): Flow<List<BlogPost>> = when (postType) {
-        PostType.TOP_STORIES -> topPostsObservable()
-        else -> postsByTypeObservable(postType)
-    }
-
-
-
+    @Query("DELETE FROM Posts WHERE postId = :id")
+    abstract suspend fun delete(id: Long)
 
 
     @Query("SELECT * FROM Posts ORDER BY datePosted DESC LIMIT 1")
@@ -49,12 +42,8 @@ abstract class PostsDao: BaseDao<Post>() {
     abstract suspend fun getRecentPosts(after: Date = Date(0)): List<BlogPost>
 
     @Transaction
-    @Query("SELECT * FROM Posts p LEFT OUTER JOIN postcategories pc ON p.postId = pc.postId and categoryId = :categoryId WHERE p.datePosted > :after ORDER by datePosted DESC")
-    open abstract suspend fun getPostsInCategory(categoryId: Int, after: Date = Date().addDays(-1)): List<BlogPost>
-
-    @Transaction
-    @Query("SELECT * FROM Posts WHERE postId = :id")
-    abstract fun getPost(id: Long): Flow<BlogPost>
+    @Query("SELECT p.* FROM Posts p LEFT OUTER JOIN postcategories pc ON p.postId = pc.postId and categoryId = :categoryId WHERE p.datePosted > :after ORDER by datePosted DESC")
+    abstract suspend fun getPostsInCategory(categoryId: Int, after: Date = Date().addDays(-1)): List<BlogPost>
 
     @Transaction
     @Query("DELETE FROM Posts WHERE postId NOT in (:posts)")

@@ -9,6 +9,7 @@ import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Providers
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.VerticalAlignmentLine
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -24,10 +25,10 @@ fun PostTile(blogPost: BlogPost, onPostClick: (Post)->Unit = {}) {
     val post = blogPost.post
     val modifier = Modifier
         .clickable(onClick = { onPostClick(post) })
-        .preferredSize(width = 170.dp, height = 200.dp)
+        .preferredSize(width = 172.dp, height = 208.dp)
 
     StoryCard(modifier = modifier) {
-        Column {
+        Column(modifier = Modifier.fillMaxHeight()) {
             PostImage(url = post.imageUrl)
             Spacer(modifier = Modifier.height(8.dp))
             Text(text = post.title,
@@ -37,14 +38,12 @@ fun PostTile(blogPost: BlogPost, onPostClick: (Post)->Unit = {}) {
                 style = MaterialTheme.typography.body2,
                 color = MaterialTheme.colors.primaryOnSurface
             )
-            Spacer(modifier = Modifier.height(8.dp))
-            Providers(AmbientContentAlpha provides ContentAlpha.medium) {
-                Text(text = post.author,
-                    modifier = Modifier.padding(horizontal = 8.dp),
-                    style = MaterialTheme.typography.body2
-                )
+            Spacer(modifier = Modifier.weight(1F))
+            Column(modifier = Modifier.padding(horizontal = 8.dp).padding(bottom = 8.dp)) {
+                PostMetaData(post = post)
             }
         }
+
     }
 }
 

@@ -18,6 +18,12 @@ data class UiState<T>(
         get() = error != null
 
     /**
+     * True if this contains an error
+     */
+    val hasData: Boolean
+        get() = data != null
+
+    /**
      * True if this represents a first load
      */
     val initialLoad: Boolean

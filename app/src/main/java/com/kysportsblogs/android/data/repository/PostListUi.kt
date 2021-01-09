@@ -5,72 +5,76 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import com.dropbox.android.external.store4.StoreRequest
-import com.dropbox.android.external.store4.fresh
-import com.dropbox.android.external.store4.get
+import com.dropbox.android.external.store4.*
+import com.kysportsblogs.android.data.database.KsbDatabase
 import com.kysportsblogs.android.data.models.BlogPost
 import com.kysportsblogs.android.data.models.PostType
-import com.kysportsblogs.android.data.stores.PostsStore
+import com.kysportsblogs.android.data.models.RequestLog
+import com.kysportsblogs.android.data.network.NetworkException
+import com.kysportsblogs.android.data.network.NoDataException
+import com.kysportsblogs.android.data.stores.PostListStore
+import com.kysportsblogs.android.extensions.exception
 import com.kysportsblogs.android.ui.UiState
 import com.kysportsblogs.android.util.AppDispatchers
 import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.onCompletion
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.flow.onEmpty
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
-class PostListUi @Inject constructor(private val postsStore: PostsStore, private val dispatchers: AppDispatchers) {
-private val mutext = Mutex()
+class PostListUi @Inject constructor(private val postListStore: PostListStore, private val requestLog: RequestLog, private val db: KsbDatabase, private val dispatchers: AppDispatchers) {
     private var postType: PostType? = null
+        set(value) {
+            if (field == null) {
+                field = value
+            }
+        }
 
     private var postsLoading by mutableStateOf(false)
     private var postList: List<BlogPost>? by mutableStateOf(null)
     private var error: Throwable? by mutableStateOf(null)
 
-    val state = derivedStateOf {
+    val state by derivedStateOf {
         UiState(loading = postsLoading, data = postList, error = error)
     }
 
-    suspend fun init(type: PostType) {
-        Log.d("PostListUi", "Init called for ${type.displayName}.")
-       if (postType == null) {
-           postType = type
-           Log.d("PostListUi", "Initializing list for ${type.displayName}.")
+    suspend fun loadPosts(type: PostType) {
+        postType = type
 
-           refreshPosts(false)
+        val dataExpired = requestLog.isRequestExpired(type)
 
-           withContext(dispatchers.io) {
-               postsStore.stream(StoreRequest.cached(type, false))
-                   .onCompletion {
-                       Log.d("PostListUi", "Stream completed for ${type.displayName}.")
-                       postType = null
-                   }
-                   .collect {
-                       Log.d("PostListUi", "Got some posts for ${type.displayName}. Showing ${it.dataOrNull()?.size ?: 0} posts.")
-                       postList = it.dataOrNull()?.take(5)
-                   }
-           }
-       }
+        observePosts(dataExpired)
+    }
+
+    private suspend fun observePosts(refresh: Boolean = false) {
+        postListStore
+            .stream(StoreRequest.cached(postType!!, refresh))
+            .distinctUntilChanged()
+            .collect { response ->
+                postsLoading = response is StoreResponse.Loading
+
+                when (response) {
+                    is StoreResponse.Data -> postList = response.dataOrNull() ?: listOf()
+                    is StoreResponse.Error -> error = response.exception
+                    else -> { /* noop */ }
+                }
+            }
     }
 
     suspend fun refreshPosts(force: Boolean) {
         postType?.let { type ->
-            Log.d("PostListUi", "Refreshing posts for ${type.displayName}.")
-            mutext.withLock {
+            try {
                 postsLoading = true
-            }
-            withContext(dispatchers.io) {
-                if (force) {
-                    postsStore.fresh(type)
-                } else {
-                    postsStore.get(type)
+                when {
+                    force -> postListStore.fresh(type)
+                    else ->  postListStore.get(type)
                 }
-            }
-            mutext.withLock {
+            } catch (ex: NetworkException) {
+                Log.d("PostListUi", "Network Exception for ${type.displayName}")
+            } finally {
                 postsLoading = false
             }
         }
     }
-
 }

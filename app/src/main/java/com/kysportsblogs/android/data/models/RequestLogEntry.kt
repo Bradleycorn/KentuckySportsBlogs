@@ -12,7 +12,7 @@ import javax.inject.Inject
 
 @Entity(
     tableName = "RequestLog",
-    indices = [Index("postType")]
+    indices = [Index("postType", unique = true)]
 )
 data class RequestLogEntry(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
@@ -23,8 +23,6 @@ data class RequestLogEntry(
 class RequestLog @Inject constructor(private val db: KsbDatabase)  {
 
     suspend fun getRequestTimestamp(postType: PostType): Instant? {
-
-
         return db.requestLogDao().getRequest(postType)?.timestamp
     }
 

@@ -5,9 +5,4 @@ enum class PostType(val displayName: String, val recentCount: Int) {
     FOOTBALL("Football", 10),
     TOP_STORIES("Top Stories", 5),
     OTHER("More Stories", -1);
-
-    companion object {
-
-
-    }
 }
