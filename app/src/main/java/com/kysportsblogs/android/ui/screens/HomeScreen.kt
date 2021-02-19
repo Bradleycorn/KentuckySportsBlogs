@@ -26,7 +26,7 @@ import com.kysportsblogs.android.ui.composables.posts.*
 @Composable
 fun HomeScreen(viewModel: HomeScreenViewModel, onPostClicked: (Post) -> Unit = {}, onCategoryClicked: (PostType) -> Unit = {}) {
     val state = viewModel.homeScreenState
-    LaunchedEffect(subject = viewModel) { viewModel.loadPosts() }
+    LaunchedEffect(key1 = viewModel) { viewModel.loadPosts() }
 
     AppScreen {
         when {

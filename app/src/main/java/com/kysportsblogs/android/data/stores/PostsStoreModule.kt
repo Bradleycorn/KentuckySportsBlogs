@@ -18,8 +18,12 @@ import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.components.ActivityComponent
+import dagger.hilt.android.components.ActivityRetainedComponent
 import dagger.hilt.android.components.ApplicationComponent
+import dagger.hilt.android.components.ViewModelComponent
 import dagger.hilt.android.qualifiers.ActivityContext
+import dagger.hilt.android.qualifiers.ApplicationContext
+import dagger.hilt.android.scopes.ActivityRetainedScoped
 import dagger.hilt.android.scopes.ActivityScoped
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
@@ -33,18 +37,17 @@ private const val TAG = "PostsStore"
 typealias PostListStore = Store<PostType, List<BlogPost>>
 typealias PostStore = Store<Long, BlogPost>
 
-@InstallIn(ActivityComponent::class)
+@InstallIn(ActivityRetainedComponent::class)
 @Module
 object PostsStoreModule {
 
     @OptIn(ExperimentalTime::class)
     @Provides
-    @ActivityScoped
+    @ActivityRetainedScoped
     fun postListStore(
         db: KsbDatabase,
         ksrApi: KsrApi,
         requestLog: RequestLog,
-        @ActivityContext context: Context
     ): PostListStore = StoreBuilder.from(
         fetcher = Fetcher.of { postType: PostType ->
             Log.d(TAG, "Fetching posts for ${postType.displayName}")
@@ -96,7 +99,6 @@ object PostsStoreModule {
             deleteAll = db.postsDao()::deleteAllPosts
         )
     )
-    .scope((context as AppCompatActivity).lifecycleScope)
     .cachePolicy(MemoryPolicy.builder<PostType, List<BlogPost>>()
         .setMaxSize(PostType.values().size * 2L)
         .setExpireAfterWrite(5.minutes)
@@ -105,7 +107,7 @@ object PostsStoreModule {
 
     @OptIn(ExperimentalTime::class)
     @Provides
-    @ActivityScoped
+    @ActivityRetainedScoped
     fun postStore(
         db: KsbDatabase,
         ksrApi: KsrApi

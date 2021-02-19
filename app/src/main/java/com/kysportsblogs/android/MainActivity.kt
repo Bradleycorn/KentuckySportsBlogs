@@ -17,11 +17,7 @@ import com.kysportsblogs.android.ui.Screen
 import com.kysportsblogs.android.ui.theme.KsbTheme
 import dagger.hilt.android.AndroidEntryPoint
 import androidx.navigation.compose.*
-import com.kysportsblogs.android.di.ProvideNavigationViewModelFactoryMap
 import com.kysportsblogs.android.ui.buildNavGraph
-
-val AmbientApplication = staticAmbientOf<Application>()
-val AmbientNavController = staticAmbientOf<NavController>()
 
 @AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
@@ -31,40 +27,29 @@ class MainActivity : AppCompatActivity() {
 
         setContent {
             val navController = rememberNavController()
-            Providers(
-                AmbientApplication provides application,
-                AmbientNavController provides navController
-            ) {
+            KsbTheme {
+                Scaffold(
+                    topBar = {
+                        val destination by navController.currentBackStackEntryAsState()
 
-
-                KsbTheme {
-                    Scaffold(
-                        topBar = {
-                            val destination by navController.currentBackStackEntryAsState()
-
-                            val isTopLevel =
-                                destination?.arguments?.getBoolean("isTopLevel") ?: false
-                            val title = destination?.arguments?.getString("title")
-                                ?: "Kentucky Sports Blogs"
-                            AppBar(
-                                title = title,
-                                !isTopLevel,
-                                onBackClick = { navController.navigateUp() })
-                        }
+                        val isTopLevel =
+                            destination?.arguments?.getBoolean("isTopLevel") ?: false
+                        val title = destination?.arguments?.getString("title")
+                            ?: "Kentucky Sports Blogs"
+                        AppBar(
+                            title = title,
+                            !isTopLevel,
+                            onBackClick = { navController.navigateUp() })
+                    }
+                ) {
+                    NavHost(
+                        navController = navController,
+                        startDestination = Screen.Home.route
                     ) {
-                        ProvideNavigationViewModelFactoryMap(factory = defaultViewModelProviderFactory as HiltViewModelFactory) {
-                            NavHost(
-                                navController = navController,
-                                startDestination = Screen.Home.route
-                            ) {
-                                buildNavGraph(navController)
-                            }
-                        }
+                        buildNavGraph(navController)
                     }
                 }
-
             }
-
         }
     }
 }
@@ -74,7 +59,7 @@ fun AppBar(title: String, showBackButton: Boolean, onBackClick: ()->Unit = {}) {
     val label = @Composable { Text(text = title) }
     val icon = (@Composable {
         IconButton(onClick = onBackClick) {
-            Icon(imageVector = Icons.Filled.ArrowBack)
+            Icon(imageVector = Icons.Filled.ArrowBack, "Go Back")
         }
     }).takeIf { showBackButton }
 

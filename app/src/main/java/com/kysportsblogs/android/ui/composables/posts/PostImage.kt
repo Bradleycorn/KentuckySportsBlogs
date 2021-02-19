@@ -37,7 +37,8 @@ fun PostImage(url: String?, modifier: Modifier = Modifier) {
                     result = imageState,
                     fadeInEnabled = true,
                     fadeInDurationMs = 600,
-                    contentScale = ContentScale.Crop
+                    contentScale = ContentScale.Crop,
+                    contentDescription = "Post Image"
                 )
                 else -> DefaultPostImage(imageModifier)
             }
@@ -50,6 +51,7 @@ private fun DefaultPostImage(modifier: Modifier = Modifier) {
     Image(
         imageVector = vectorResource(id = R.drawable.ic_uk_logo),
         modifier = modifier.padding(4.dp),
-        contentScale = ContentScale.Fit
+        contentScale = ContentScale.Fit,
+        contentDescription = "Default Post Image"
     )
 }

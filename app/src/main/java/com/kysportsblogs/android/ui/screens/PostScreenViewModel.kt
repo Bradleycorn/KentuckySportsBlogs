@@ -12,10 +12,12 @@ import com.kysportsblogs.android.data.models.BlogPost
 import com.kysportsblogs.android.data.network.NetworkException
 import com.kysportsblogs.android.data.stores.PostStore
 import com.kysportsblogs.android.ui.UiState
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
-
-class PostScreenViewModel @ViewModelInject constructor(private val postStore: PostStore): ViewModel() {
+@HiltViewModel
+class PostScreenViewModel @Inject constructor(private val postStore: PostStore): ViewModel() {
     var postState by mutableStateOf(UiState<BlogPost>())
         private set
 

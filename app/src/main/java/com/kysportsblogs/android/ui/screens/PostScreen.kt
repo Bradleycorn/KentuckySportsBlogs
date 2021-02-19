@@ -4,11 +4,13 @@ import android.annotation.SuppressLint
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.webkit.WebSettingsCompat
@@ -16,8 +18,10 @@ import androidx.webkit.WebViewFeature
 import coil.transform.CircleCropTransformation
 import com.kysportsblogs.android.AppScreen
 import com.kysportsblogs.android.R
+import com.kysportsblogs.android.ThemedPreview
 import com.kysportsblogs.android.data.models.BlogPost
 import com.kysportsblogs.android.data.models.Post
+import com.kysportsblogs.android.data.models.previewPost
 import com.kysportsblogs.android.ui.theme.primaryOnSurface
 import com.kysportsblogs.android.ui.UiState
 import com.kysportsblogs.android.extensions.getColorFromAttr
@@ -41,7 +45,7 @@ fun PostScreen(viewModel: PostScreenViewModel, postId: Long,) {
 @Composable
 private fun PostContent(blogPost: BlogPost) {
     val post = blogPost.post
-    val postContent by produceState(initialValue = UiState.Loading<String>(), subject = post) {
+    val postContent by produceState(initialValue = UiState.Loading<String>(), key1 = post) {
         val content = post.formatContent()
         value = value.copy(loading = false, data = content)
     }
@@ -56,11 +60,27 @@ private fun PostContent(blogPost: BlogPost) {
             when {
                 postContent.loading -> LoadingIndicator()
                 postContent.data != null -> {
-                    PostImage(url = post.imageUrl)
-                    Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
-                        PostDetails(post)
-                        PostBody(postContent.data!!)
+                    LazyColumn {
+                        item {
+                            PostImage(url = post.imageUrl)
+                        }
+
+                        item {
+                            PostDetails(post, modifier = Modifier.padding(horizontal = 16.dp).padding(top = 8.dp))
+                        }
+                        item {
+                            PostBody(postContent.data!!, modifier = Modifier.padding(horizontal = 16.dp).padding(bottom = 8.dp))
+
+                        }
                     }
+
+//                    Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
+//                        PostDetails(post)
+//                        PostBody(postContent.data!!)
+//                    }
+
+
+
                 }
             }
         }
@@ -68,30 +88,35 @@ private fun PostContent(blogPost: BlogPost) {
 }
 
 @Composable
-private fun PostDetails(post: Post) {
-    Providers(AmbientContentAlpha provides ContentAlpha.high) {
-        Text(
-            text = post.title,
-            style = MaterialTheme.typography.h5,
-            color = MaterialTheme.colors.primaryOnSurface
-        )
-    }
-    Spacer(modifier = Modifier.height(8.dp))
-    Row(modifier = Modifier.padding(vertical = 8.dp)) {
-        CoilImage(
-            data = post.authorImage ?: "",
-            requestBuilder = {
-                transformations(CircleCropTransformation())
-            },
-            modifier = Modifier.width(36.dp).height(36.dp)
-                .align(Alignment.CenterVertically),
-            contentScale = ContentScale.Fit
-        )
+private fun PostDetails(post: Post, modifier: Modifier = Modifier) {
+    Column(modifier = modifier) {
+        Providers(AmbientContentAlpha provides ContentAlpha.high) {
+            Text(
+                text = post.title,
+                style = MaterialTheme.typography.h5,
+                color = MaterialTheme.colors.primaryOnSurface
+            )
+        }
+        Spacer(modifier = Modifier.height(8.dp))
+        Row(modifier = Modifier.padding(vertical = 8.dp)) {
+            CoilImage(
+                data = post.authorImage ?: "",
+                requestBuilder = {
+                    transformations(CircleCropTransformation())
+                },
+                modifier = Modifier
+                    .width(36.dp)
+                    .height(36.dp)
+                    .align(Alignment.CenterVertically),
+                contentScale = ContentScale.Fit,
+                contentDescription = "Post Thumbnail"
+            )
 
-        Column(modifier = Modifier.padding(horizontal = 8.dp)) {
-            Text(text = post.author)
-            Providers(AmbientContentAlpha provides ContentAlpha.medium) {
-                Text(text = post.datePosted.toString("MMMM dd, h:mm a"))
+            Column(modifier = Modifier.padding(horizontal = 8.dp)) {
+                Text(text = post.author)
+                Providers(AmbientContentAlpha provides ContentAlpha.medium) {
+                    Text(text = post.datePosted.toString("MMMM dd, h:mm a"))
+                }
             }
         }
     }
@@ -103,7 +128,7 @@ private fun PostDetails(post: Post) {
 fun PostBody(html: String, modifier: Modifier = Modifier) {
     val darkModeEnabled = !MaterialTheme.colors.isLight
 
-    AndroidView(viewBlock = { context ->
+    AndroidView(modifier = modifier, viewBlock = { context ->
         WebView(context).apply {
             webViewClient = WebViewClient()
             settings.javaScriptEnabled = true
@@ -126,10 +151,10 @@ fun PostBody(html: String, modifier: Modifier = Modifier) {
     })
 }
 
-//@Preview
-//@Composable
-//fun PreviewPostScreen() {
-//    ThemedPreview {
-//        PostContent(blogPost = previewPost, previewPost.post.content)
-//    }
-//}
+@Preview
+@Composable
+fun PreviewPostScreen() {
+    ThemedPreview {
+        PostContent(blogPost = previewPost)
+    }
+}

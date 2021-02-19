@@ -1,13 +1,13 @@
 package com.kysportsblogs.android.ui
 
 import android.os.Bundle
-import androidx.navigation.NavGraphBuilder
-import androidx.navigation.NavHostController
-import androidx.navigation.NavType
+import androidx.compose.ui.platform.AmbientContext
+import androidx.compose.ui.viewinterop.viewModel
+import androidx.hilt.navigation.HiltViewModelFactory
+import androidx.navigation.*
 import androidx.navigation.compose.*
 import com.kysportsblogs.android.HomeScreenViewModel
 import com.kysportsblogs.android.data.models.PostType
-import com.kysportsblogs.android.di.navViewModel
 import com.kysportsblogs.android.ui.screens.*
 
 sealed class Screen(val route: String, val title: String, val isTopLevel: Boolean = false) {
@@ -32,7 +32,9 @@ fun NavGraphBuilder.buildNavGraph(navController: NavHostController) {
             navArgument("title") { defaultValue = Screen.Home.title },
             navArgument("isTopLevel") { defaultValue = Screen.Home.isTopLevel })
     ) {
-        val vm: HomeScreenViewModel = navViewModel()
+
+        val vm: HomeScreenViewModel = viewModel(factory = HiltViewModelFactory(AmbientContext.current, it))
+
         HomeScreen(vm,
             onPostClicked = { post ->
                 navController.navigate(Screen.Post.buildRoute(post.postId))
@@ -49,7 +51,7 @@ fun NavGraphBuilder.buildNavGraph(navController: NavHostController) {
         )
 
     ) { backStackEntry ->
-        val vm: PostScreenViewModel = navViewModel()
+        val vm: PostScreenViewModel = viewModel(factory = HiltViewModelFactory(AmbientContext.current, backStackEntry))
         val postId = backStackEntry.arguments?.getLong("postId") ?: 0
         PostScreen(vm, postId)
     }
@@ -60,7 +62,7 @@ fun NavGraphBuilder.buildNavGraph(navController: NavHostController) {
             navArgument("title") { defaultValue = "Unknown Category" }
         )
     ) { backStackEntry ->
-        val vm: CategoryScreenViewModel = navViewModel()
+        val vm: CategoryScreenViewModel = viewModel(factory = HiltViewModelFactory(AmbientContext.current, backStackEntry))
         val postType = backStackEntry.arguments?.getSerializable("postType") as? PostType
 
         postType?.let {

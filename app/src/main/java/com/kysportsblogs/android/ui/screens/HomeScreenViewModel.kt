@@ -11,13 +11,16 @@ import com.kysportsblogs.android.data.models.BlogPost
 import com.kysportsblogs.android.data.models.PostType
 import com.kysportsblogs.android.data.repository.PostListUi
 import com.kysportsblogs.android.ui.UiState
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.supervisorScope
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import javax.inject.Inject
 
-class HomeScreenViewModel @ViewModelInject constructor(
+@HiltViewModel
+class HomeScreenViewModel @Inject constructor(
     private val footballUi: PostListUi,
     private val basketballUi: PostListUi,
     private val topStoriesUi: PostListUi,
